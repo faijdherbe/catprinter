@@ -70,7 +70,9 @@ export const isConnected = () => !!device?.gatt.connected;
 
 export async function connect(onEvent) {
   if (!device) {
-    device = await navigator.bluetooth.requestDevice({filters: [{namePrefix: 'MX'}], optionalServices: [SERVICE]});
+    // Cat printers with the 0x51 0x78 protocol. Only the MX10 is tested.
+    const filters = ['MX', 'GB', 'GT', 'YT'].map(namePrefix => ({namePrefix}));
+    device = await navigator.bluetooth.requestDevice({filters, optionalServices: [SERVICE]});
     device.addEventListener('gattserverdisconnected', () => {
       paused = false;
       resume?.(); // a print that waits for 'resume' continues, and its next write fails

@@ -477,4 +477,12 @@ setIndicator(settings.printer ? 'off' : 'none');
 drawTemplateSelect();
 route();
 
-if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js');
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  const hadWorker = !!navigator.serviceWorker.controller; // false on the first visit: no reload then
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadWorker) return;
+    store(); // write pending input before the reload
+    location.reload();
+  });
+  navigator.serviceWorker.register('sw.js');
+}

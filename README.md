@@ -11,16 +11,6 @@ Public web app: https://faijdherbe.github.io/catprinter/
 
 Each project is in its own folder and has its own README. Information that applies to all the projects is in this file.
 
-## Examples
-
-A halftone illustration, as the printer gets it (384 px wide, 1 bit):
-
-![Halftone illustration of a superhero in space, 384 px wide, black and white](docs/examples/halftone-384.png)
-
-To print an image like this, use the web app (Edit → Add image, mode Threshold), or the Python script:
-
-    python3 python/catprint.py --image docs/examples/halftone-384.png
-
 ## Protocol notes
 
 - Packet: `51 78 <cmd> 00 <len lo> <len hi> <payload> <crc8> ff`. The CRC-8 polynomial is `0x07` and it covers the payload only.

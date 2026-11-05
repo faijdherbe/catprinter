@@ -12,6 +12,10 @@ Public page: https://faijdherbe.github.io/catprinter/
 
 When the app starts, it tests the real Web Bluetooth API (`requestDevice` and `getAvailability`). If the test fails, the app tells you why it cannot print. You can continue without printing: then you can make pages and templates and see the preview, but you cannot connect or print.
 
+## Printers
+
+The Bluetooth dialog shows printers whose name starts with MX, GB, GT or YT. These cat printers use the same `51 78` protocol and print 384 px wide. Only the MX10 is tested.
+
 ## Run locally
 
 Chrome does not load ES modules from a `file://` URL. Use a local server:
@@ -20,7 +24,7 @@ Chrome does not load ES modules from a `file://` URL. Use a local server:
 
 Then open http://localhost:8642/.
 
-The service worker keeps the files in a cache. After a change, increase `VERSION` in `sw.js`, or select "Update on reload" in DevTools → Application → Service workers.
+The service worker keeps the files in a cache. After a change, increase `VERSION` in `sw.js`. The new version then takes control at once, and open pages reload one time.
 
 ## Use
 

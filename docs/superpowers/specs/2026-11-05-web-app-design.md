@@ -105,7 +105,7 @@ The modules are ES modules (`<script type="module">`). `render.js` and `printer.
 ## Print flow
 
 1. The user taps Print.
-2. If the app is not connected, it opens the Bluetooth dialog and connects. `requestDevice` uses a name filter (`namePrefix: "MX"`) and the GATT service that contains `ae01`/`ae02` in `optionalServices`. The expected service UUID is `0xae30`. The first implementation step checks it on the real printer. The tap on Print is the user action that Chrome requires.
+2. If the app is not connected, it opens the Bluetooth dialog and connects. `requestDevice` uses name filters (`namePrefix` MX, GB, GT and YT) and the GATT service that contains `ae01`/`ae02` in `optionalServices`. The expected service UUID is `0xae30`. The first implementation step checks it on the real printer. The tap on Print is the user action that Chrome requires.
 3. The app sends the packets in the sequence of `README.md` → Protocol notes. It obeys flow control (`AE` pause/resume). After each 8 rows, it waits 20 ms. After the content, it sends blank rows for the feed.
 4. During the print: the Print button is disabled, shows a `progress.circle` spinner and "Printing 120/384", and has `aria-busy="true"`. The rest of the UI stays usable.
 5. After the print: the button is normal again.
