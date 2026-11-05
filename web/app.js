@@ -210,7 +210,94 @@ function area(el, list) {
 
 area($('#content'), draft.content);
 
-// PRINTER (Task 8)
+const MSG = {
+  paper: 'Paper is empty. Put in paper and try again.',
+  cover: 'Cover is open. Close the cover and try again.',
+  heat: 'Printer is too hot. Wait 1 minute and try again.',
+  battery: 'Battery is low. Charge the printer.',
+  lost: 'Printer is not connected. Tap Print to connect again.',
+  connect: 'Cannot connect. Make sure that the printer is on and that no other device is connected to it.',
+};
+let userDisconnect = false;
+const printMsg = t => ($('#print-msg').textContent = t);
+
+function drawConn() {
+  const c = printer.isConnected();
+  const b = $('#conn');
+  b.className = c ? 'responsive error' : 'responsive';
+  b.innerHTML = c ? '<i>bluetooth_disabled</i><span>Disconnect</span>' : '<i>bluetooth</i><span>Connect</span>';
+}
+
+function onPrinter(type, b) {
+  if (type === 'disconnected') {
+    setIndicator('off');
+    if (!userDisconnect) printMsg(MSG.lost);
+    drawConn();
+    return;
+  }
+  const errs = printer.stateErrors(b);
+  $('#st-paper').textContent = errs.includes('paper') ? 'Empty' : 'OK';
+  $('#st-cover').textContent = errs.includes('cover') ? 'Open' : 'Closed';
+  $('#st-battery').textContent = errs.includes('battery') ? 'Low' : 'OK';
+  const fatal = errs.find(e => e !== 'battery');
+  setIndicator(fatal ? 'off' : 'on');
+  printMsg(fatal ? MSG[fatal] : errs.includes('battery') ? MSG.battery : '');
+}
+
+async function connectPrinter() {
+  userDisconnect = false;
+  settings.printer = await printer.connect(onPrinter);
+  save();
+  setIndicator('on');
+  drawConn();
+}
+
+$('#conn').onclick = async () => {
+  if (printer.isConnected()) {
+    userDisconnect = true;
+    printer.disconnect();
+    return;
+  }
+  try {
+    await connectPrinter();
+  } catch (e) {
+    if (e.name !== 'NotFoundError') printMsg(MSG.connect);
+  }
+};
+
+$('#print').onclick = async () => {
+  const b = $('#print');
+  b.disabled = true;
+  b.setAttribute('aria-busy', 'true');
+  b.innerHTML = '<progress class="circle small"></progress><span>Printing</span>';
+  let stage = 'connect';
+  try {
+    clearTimeout(timer);
+    await preview();
+    if (!printer.isConnected()) await connectPrinter();
+    stage = 'print';
+    printMsg('');
+    await printer.print(current, settings, (n, total) => (b.querySelector('span').textContent = `Printing ${n}/${total}`));
+  } catch (e) {
+    if (e.name !== 'NotFoundError') printMsg(stage === 'connect' ? MSG.connect : MSG.lost);
+  }
+  b.disabled = false;
+  b.removeAttribute('aria-busy');
+  b.innerHTML = '<i>print</i><span>Print</span>';
+};
+
+document.querySelectorAll('[data-s]').forEach(f => {
+  const k = f.dataset.s;
+  const out = document.querySelector(`#printer-screen [data-out="${k}"]`);
+  f.value = settings[k];
+  out.textContent = settings[k];
+  f.oninput = () => {
+    settings[k] = +f.value;
+    out.textContent = f.value;
+    save();
+  };
+});
+drawConn();
 
 // TEMPLATES (Task 9)
 function drawTemplates() {}
