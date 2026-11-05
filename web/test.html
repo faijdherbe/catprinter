@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Catprinter tests</title>
+<pre id="out">running</pre>
+<script type="module">
+const fails = [];
+const check = (name, ok) => { if (!ok) fails.push(name); };
+const hex = a => [...a].map(b => b.toString(16).padStart(2, '0')).join('');
+try {
+  // TESTS
+} catch (e) {
+  fails.push('exception: ' + e.message);
+}
+document.getElementById('out').textContent = fails.length ? 'FAIL\n' + fails.join('\n') : 'ok';
+</script>
