@@ -29,7 +29,8 @@ body[data-gate] > :not(#gate), body:not([data-gate]) #gate { display: none; }
 #ind[data-state="on"] { color: #1b5e20; border-color: currentColor; }
 body.dark #ind[data-state="on"] { color: #81c784; }
 #ind[data-state="off"] { color: var(--error); border-color: currentColor; }
-.grip { cursor: grab; touch-action: none; }
+.grip { cursor: grab; touch-action: none; padding: 12px; margin: -12px; }
+@media (pointer: coarse) { button, nav a, .chip { min-height: 48px; } .grip { margin: -12px 0; } }
 article.dragging { opacity: .6; }
 canvas { width: 100%; max-width: 384px; image-rendering: pixelated; background: #fff; display: block; margin: 0 auto; }
 </style>
