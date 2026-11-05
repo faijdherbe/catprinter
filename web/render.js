@@ -209,9 +209,28 @@ async function renderSection(s) {
   return s.type === 'image' ? renderImage(s) : renderText(s);
 }
 
-// IMAGE (Task 5)
-async function renderImage() {
-  return null;
+async function renderImage(s) {
+  if (!s.src?.startsWith('data:image/')) return null; // only data URLs, never the network
+  const [head, b64] = s.src.split(',');
+  const bytes = Uint8Array.from(atob(b64), ch => ch.charCodeAt(0));
+  const img = await createImageBitmap(new Blob([bytes], {type: head.slice(5, head.indexOf(';'))}));
+  const rot = s.rotate % 180 !== 0;
+  const iw = rot ? img.height : img.width;
+  const ih = rot ? img.width : img.height;
+  const w = Math.max(1, Math.round((WIDTH * s.width) / 100));
+  const h = Math.max(1, Math.round((ih * w) / iw));
+  const left = s.align === 'center' ? (WIDTH - w) >> 1 : s.align === 'right' ? WIDTH - w : 0;
+  const c = new OffscreenCanvas(WIDTH, h);
+  const x = c.getContext('2d');
+  x.fillStyle = '#fff';
+  x.fillRect(0, 0, WIDTH, h);
+  x.filter = `brightness(${100 + s.brightness}%) contrast(${100 + s.contrast}%)`;
+  x.translate(left + w / 2, h / 2);
+  x.rotate((s.rotate * Math.PI) / 180);
+  const dw = rot ? h : w;
+  const dh = rot ? w : h;
+  x.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+  return c;
 }
 
 export async function renderPage(sections) {

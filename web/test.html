@@ -39,6 +39,25 @@ try {
   let rmax = -1;
   r.data.forEach((b, i) => { if (b) rmax = Math.max(rmax, i % 384); });
   check('align right', rmax > 370);
+  const dataUrl = async fill => {
+    const ic = new OffscreenCanvas(100, 50);
+    const ix = ic.getContext('2d');
+    ix.fillStyle = fill;
+    ix.fillRect(0, 0, 100, 50);
+    const blob = await ic.convertToBlob();
+    return new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(blob); });
+  };
+  const img = {id: 'i', type: 'image', src: await dataUrl('#000'), width: 50, align: 'right', mode: 'threshold', brightness: 0, contrast: 0, rotate: 0};
+  const ip = await renderPage([img]);
+  check('image size', ip.height === 96);
+  check('image right', ip.data[384 * 10 + 383] === 1 && ip.data[384 * 10 + 100] === 0);
+  check('image rotate', (await renderPage([{...img, rotate: 90}])).height === 384);
+  const grey = {...img, src: await dataUrl('#808080')};
+  const black = bm => bm.data.reduce((n, b) => n + b, 0) / (192 * 96);
+  check('threshold grey', black(await renderPage([grey])) === 0);
+  const dith = black(await renderPage([{...grey, mode: 'dither'}]));
+  check('dither grey', dith > 0.3 && dith < 0.7);
+  check('no remote src', (await renderPage([{...img, src: 'https://example.com/a.png'}])).height === 0);
 } catch (e) {
   fails.push('exception: ' + e.message);
 }
