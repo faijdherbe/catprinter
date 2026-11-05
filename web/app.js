@@ -446,3 +446,5 @@ globalThis.ui?.('theme', '#7540bf');
 setIndicator(settings.printer ? 'off' : 'none');
 drawTemplateSelect();
 route();
+
+if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js');
