@@ -26,7 +26,7 @@ Tools to print on the MX10 BLE thermal printer. Read `README.md` for the protoco
 ## Code
 
 - No build step and no new dependencies without a clear need. Python: host `python3` with the installed `bleak` + Pillow. Do not use `python3 -I` (it hides `bleak` in `~/.local`).
-- Web: static files only, plain HTML/JS, no framework, no bundler. Use relative paths, so that the page works from `file://`, `localhost` and GitHub Pages. Target: Web Bluetooth in Chrome/Edge (desktop and Android).
+- Web: static files only, plain HTML/JS, no framework, no bundler. Use relative paths, so that the page works from `localhost` and GitHub Pages. Chrome does not load ES modules from `file://`. Run `python3 -m http.server 8642 -d web` (port 8000 is in use on this computer). After a change to a cached file, increase `VERSION` in `web/sw.js`. Target: Web Bluetooth in Chrome/Edge (desktop and Android).
 ## UI (web)
 
 Source: `ui-ux-pro-max` UX guidelines. Check the UI against these rules before you say that UI work is complete.

@@ -2,9 +2,12 @@
 
 Tools to print on the MX10 Bluetooth thermal "cat printer" (BLE `CC:10:24:20:DC:08`, 384 px wide, black and white only).
 
+Public web app: https://faijdherbe.github.io/catprinter/
+
 | Folder              | What                                                       |
 |---------------------|------------------------------------------------------------|
 | [python/](python/)  | CLI script (`bleak` + Pillow) and the Claude Code `catprint` skill |
+| [web/](web/)        | Web app (PWA, Web Bluetooth). Public page: https://faijdherbe.github.io/catprinter/ |
 
 Each project is in its own folder and has its own README. Information that applies to all the projects is in this file.
 

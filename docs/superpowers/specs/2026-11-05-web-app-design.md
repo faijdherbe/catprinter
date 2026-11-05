@@ -4,7 +4,7 @@ Date: 2026-11-05. Status: approved in the brainstorm, waiting for the user revie
 
 ## Goal
 
-A static web app in `web/` that prints text and images on the MX10 printer with Web Bluetooth. It runs from GitHub Pages, from `localhost` and from `file://`. You can install it as a PWA. It works in Chrome and Edge on desktop, and in Chrome on Android. It does not work in Firefox, in Safari or on iOS.
+A static web app in `web/` that prints text and images on the MX10 printer with Web Bluetooth. It runs from GitHub Pages and from `localhost`. Chrome does not load ES modules from `file://`. You can install it as a PWA. It works in Chrome and Edge on desktop, and in Chrome on Android. It does not work in Firefox, in Safari or on iOS.
 
 ## Functions
 
@@ -44,7 +44,7 @@ The screen comes from the URL hash, so the Android back button works.
 - **Template list:** one row for each template. A tap on the name opens the editor. A `more_vert` menu has Edit, Export and Delete. The menu opens over the rows below it and does not push them down. Under the list: New template and Import. New template makes a template with the name "New template" at once and opens the editor.
 - **Template editor:** a name field, a TOP area and a BOTTOM area, each with its own sections and add buttons. Between them, a marker shows "CONTENT goes here". The preview shows TOP + the marker + BOTTOM.
 - **Printer screen:** a list with the state of paper, cover and battery. Sliders for darkness, speed and feed. At the bottom: a red Disconnect button (`button.error`). When the app is not connected, the same place shows a Connect button. The screen has no "Connected to" text, because the indicator shows the state.
-- **No Web Bluetooth:** a message at the top of each screen: "This browser has no Bluetooth access. Use Chrome or Edge on desktop or Android."
+- **Browser check:** at start, the app tests the real API: `navigator.bluetooth.requestDevice` must exist and `getAvailability()` must return `true`. If not, a full-screen card explains what the app does and why it cannot print in this browser, or that Bluetooth is off. The button "Continue without printing" opens the app. Then Print and Connect are disabled, with the text "You cannot connect or print in this browser."
 
 ## Style
 
@@ -131,6 +131,6 @@ The modules are ES modules (`<script type="module">`). `render.js` and `printer.
 
 - `web/test.html` (offline, no printer). It shows "ok" or the failed check.
   - CRC-8: `crc8([0,0,0x49]) == 0xf8`. Packet: `pkt(0xA3,[0])` → `5178a30001000000ff`.
-  - Renderer: a fixed piece of Markdown gives a bitmap that is 384 px wide and of the expected height. A `->text<-` line has the same white space on the left and on the right (±1 px).
+  - Renderer: a fixed piece of Markdown gives a bitmap that is 384 px wide and of the expected height. A `->text<-` line has the same white space on the left and on the right (±2 px).
   - Template merge: TOP + CONTENT + BOTTOM in this sequence.
 - Before each merge: the steps in `CLAUDE.md` → Before merge. If print code changed, one short test print on the real printer.

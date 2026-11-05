@@ -2,6 +2,8 @@
 
 Print text and images on the MX10 printer from Linux with one Python script.
 
+To print from a browser (computer or Android) with no install, use the web app: https://faijdherbe.github.io/catprinter/
+
 ## Requirements
 
 - Python 3 with `bleak` and `Pillow` (`pip install bleak pillow`)
