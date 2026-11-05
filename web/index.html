@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#7540bf">
+<title>Catprinter</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/192.png">
+<link rel="stylesheet" href="lib/beer.min.css">
+<script type="module" src="lib/beer.min.js"></script>
+<script type="module" src="lib/material-dynamic-colors.min.js"></script>
+<script type="module" src="app.js"></script>
+<style>
+/* Custom CSS: only what Beer CSS does not supply. */
+body:not([data-screen="templates"]) #templates-screen,
+body:not([data-screen="template"]) #template-screen,
+body:not([data-screen="printer"]) #printer-screen,
+body:not([data-screen="edit"]):not([data-screen="preview"]) #compose-screen { display: none; }
+body[data-gate] > :not(#gate), body:not([data-gate]) #gate { display: none; }
+@media (max-width: 600px) {
+  body[data-screen="preview"] #edit-pane, body[data-screen="edit"] #preview-pane { display: none; }
+  #print-bar { position: sticky; bottom: 0; padding-block: .5rem; background: var(--surface); }
+}
+@media (min-width: 601px) { .sticky { position: sticky; top: 5rem; } }
+#gate { max-width: 40rem; width: 100%; justify-self: center; margin-inline: auto; padding: 2rem 1rem; }
+#ind { background: var(--surface); }
+#ind[data-state="on"] { color: #1b5e20; border-color: currentColor; }
+body.dark #ind[data-state="on"] { color: #81c784; }
+#ind[data-state="off"] { color: var(--error); border-color: currentColor; }
+.grip { cursor: grab; touch-action: none; }
+article.dragging { opacity: .6; }
+canvas { width: 100%; max-width: 384px; image-rendering: pixelated; background: #fff; display: block; margin: 0 auto; }
+</style>
+</head>
+<body data-screen="edit">
+<section id="gate">
+  <h4>This browser cannot print</h4>
+  <p>Catprinter prints text and images on a small Bluetooth thermal printer. To do this, the app must use Bluetooth from the browser (Web Bluetooth).</p>
+  <p id="gate-reason" class="bold"></p>
+  <div class="space"></div>
+  <button id="gate-continue" class="border"><i>visibility</i><span>Continue without printing</span></button>
+  <p class="small-text">If you continue, you can make pages and templates and see the preview. You cannot connect to the printer, and you cannot print.</p>
+</section>
+
+<header class="fixed primary-container">
+  <nav>
+    <h6 class="max">Catprinter</h6>
+    <a class="m l button transparent" href="#edit" data-also="preview"><i>edit_note</i><span>Compose</span></a>
+    <a class="m l button transparent" href="#templates" data-also="template"><i>dashboard</i><span>Templates</span></a>
+    <a class="m l button transparent" href="#printer"><i>print</i><span>Printer</span></a>
+    <a class="chip" id="ind" href="#printer" aria-live="polite"><i>bluetooth</i><span>No printer</span></a>
+  </nav>
+</header>
+
+<nav class="bottom s">
+  <a href="#edit"><i>edit_note</i><span>Edit</span></a>
+  <a href="#preview"><i>receipt_long</i><span>Preview</span></a>
+  <a href="#templates" data-also="template"><i>dashboard</i><span>Templates</span></a>
+  <a href="#printer"><i>print</i><span>Printer</span></a>
+</nav>
+
+<main class="responsive">
+  <section id="compose-screen">
+    <div class="field label border">
+      <select id="template-select"></select>
+      <label for="template-select">Template</label>
+    </div>
+    <div class="grid">
+      <div class="s12 m7" id="edit-pane">
+        <div id="content"></div>
+      </div>
+      <div class="s12 m5" id="preview-pane">
+        <div class="sticky">
+          <canvas id="preview-canvas" aria-label="Preview of the print"></canvas>
+          <p id="print-msg" class="error-text" role="alert"></p>
+          <div id="print-bar">
+            <button id="print" class="responsive extra"><i>print</i><span>Print</span></button>
+          </div>
+          <p class="saved small-text" aria-live="polite"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="templates-screen">
+    <h5>Templates</h5>
+    <ul class="list border" id="template-list"></ul>
+    <p id="templates-msg" class="error-text" role="alert"></p>
+    <nav>
+      <button id="new-template"><i>add</i><span>New template</span></button>
+      <button class="border" id="import-btn"><i>upload</i><span>Import</span></button>
+      <input type="file" id="import" accept=".json,application/json" hidden>
+    </nav>
+  </section>
+
+  <section id="template-screen" class="grid">
+    <div class="s12 m7">
+      <div class="field label border">
+        <input id="template-name" placeholder=" ">
+        <label for="template-name">Name</label>
+      </div>
+      <h6>TOP</h6>
+      <div id="top"></div>
+      <p class="center-align italic">CONTENT goes here</p>
+      <h6>BOTTOM</h6>
+      <div id="bottom"></div>
+    </div>
+    <div class="s12 m5">
+      <div class="sticky">
+        <canvas id="template-preview" aria-label="Preview of the template"></canvas>
+        <p class="saved small-text" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="printer-screen">
+    <h5>Printer</h5>
+    <ul class="list border">
+      <li><i>receipt</i><div class="max">Paper</div><span id="st-paper">–</span></li>
+      <li><i>inventory_2</i><div class="max">Cover</div><span id="st-cover">–</span></li>
+      <li><i>battery_full</i><div class="max">Battery</div><span id="st-battery">–</span></li>
+    </ul>
+    <label for="energy">Darkness (energy): <span data-out="energy"></span></label>
+    <div class="slider"><input type="range" id="energy" data-s="energy" min="8000" max="20000" step="500"><span></span></div>
+    <label for="speed">Speed (lower is darker): <span data-out="speed"></span></label>
+    <div class="slider"><input type="range" id="speed" data-s="speed" min="8" max="64"><span></span></div>
+    <label for="feed">Feed after print: <span data-out="feed"></span> rows</label>
+    <div class="slider"><input type="range" id="feed" data-s="feed" min="0" max="400" step="10"><span></span></div>
+    <div class="space"></div>
+    <button id="conn" class="responsive"><i>bluetooth</i><span>Connect</span></button>
+  </section>
+
+  <dialog id="confirm" popover>
+    <h5></h5>
+    <p>You cannot undo this.</p>
+    <nav class="right-align">
+      <button class="transparent" data-v="keep">Keep</button>
+      <button class="error" data-v="delete">Delete</button>
+    </nav>
+  </dialog>
+</main>
+</body>
+</html>
