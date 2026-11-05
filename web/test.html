@@ -4,6 +4,7 @@
 <pre id="out">running</pre>
 <script type="module">
 import { crc8, pkt, packRows, printJob, stateErrors } from './printer.js';
+import { renderPage, pageSections } from './render.js';
 const fails = [];
 const check = (name, ok) => { if (!ok) fails.push(name); };
 const hex = a => [...a].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -20,6 +21,24 @@ try {
   check('printJob rows', job.filter(p => p[2] === 0xA2).length === 2 + 3);
   check('printJob energy', hex(job.find(p => p[2] === 0xAF).slice(6, 8)) === 'e02e');
   check('stateErrors', stateErrors(0x03).join() === 'paper,cover' && stateErrors(0x80).length === 0);
+  const T = {top: [{id: 't'}], bottom: [{id: 'b'}]};
+  check('merge', pageSections(T, [{id: 'c'}]).map(s => s.id).join() === 't,c,b');
+  check('merge none', pageSections(null, [{id: 'c'}]).map(s => s.id).join() === 'c');
+  const text = md => renderPage([{id: 'x', type: 'text', md, align: 'left', size: 24}]);
+  const one = await text('# Hi');
+  check('render width', one.width === 384 && one.data.length === 384 * one.height);
+  check('render height', one.height > 20);
+  check('render grows', (await text('# Hi\n\nmore text')).height > one.height);
+  check('empty text', (await text('')).height === 0);
+  check('gfm blocks', (await text('| a | b |\n|---|---|\n| 1 | 2 |\n\n- [x] done\n- [ ] todo\n\n1. one\n\n> quote\n\n```\ncode\n```\n\n---')).height > 200);
+  const c = await renderPage([{id: 'c', type: 'text', md: '->X<-', align: 'left', size: 48}]);
+  let min = 384, max = -1;
+  c.data.forEach((b, i) => { if (b) { min = Math.min(min, i % 384); max = Math.max(max, i % 384); } });
+  check('center ->X<-', max > 0 && Math.abs(min - (383 - max)) <= 2);
+  const r = await renderPage([{id: 'r', type: 'text', md: 'X', align: 'right', size: 48}]);
+  let rmax = -1;
+  r.data.forEach((b, i) => { if (b) rmax = Math.max(rmax, i % 384); });
+  check('align right', rmax > 370);
 } catch (e) {
   fails.push('exception: ' + e.message);
 }
