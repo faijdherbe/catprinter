@@ -299,10 +299,108 @@ document.querySelectorAll('[data-s]').forEach(f => {
 });
 drawConn();
 
-// TEMPLATES (Task 9)
-function drawTemplates() {}
-function drawEditor() {}
-function drawTemplateSelect() {}
+// TEMPLATES
+const validSection = s =>
+  s && typeof s.id === 'string' &&
+  ((s.type === 'text' && typeof s.md === 'string') || (s.type === 'image' && typeof s.src === 'string' && (s.src === '' || s.src.startsWith('data:image/'))));
+
+function drawTemplateSelect() {
+  const sel = $('#template-select');
+  sel.replaceChildren(new Option('None', ''), ...templates.map(t => new Option(t.name, t.id)));
+  sel.value = draft.templateId ?? '';
+}
+$('#template-select').onchange = e => {
+  draft.templateId = e.target.value || null;
+  save();
+};
+
+function exportTemplate(t) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(t, null, 1)], {type: 'application/json'}));
+  a.download = `${t.name}.catprinter.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function drawTemplates() {
+  $('#template-list').replaceChildren(...templates.map(t => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <i>dashboard</i>
+      <a class="max" href="#template"></a>
+      <div>
+        <button class="circle transparent" aria-haspopup="menu"><i>more_vert</i></button>
+        <menu class="left no-wrap">
+          <li><a href="#template" data-a="edit"><i>edit</i>Edit</a></li>
+          <li><a href="#templates" data-a="export"><i>download</i>Export</a></li>
+          <li><a href="#templates" data-a="delete" class="error-text"><i>delete</i>Delete</a></li>
+        </menu>
+      </div>`;
+    const name = li.querySelector('a.max');
+    name.textContent = t.name;
+    name.onclick = () => (editing = t);
+    const btn = li.querySelector('button');
+    btn.setAttribute('aria-label', `Actions for template ${t.name}`);
+    btn.onclick = e => {
+      e.stopPropagation();
+      document.querySelectorAll('menu.active').forEach(m => m !== btn.nextElementSibling && m.classList.remove('active'));
+      btn.nextElementSibling.classList.toggle('active');
+    };
+    li.querySelector('menu').onclick = async e => {
+      const act = e.target.closest('a')?.dataset.a;
+      if (act === 'edit') editing = t;
+      if (act === 'export') { e.preventDefault(); exportTemplate(t); }
+      if (act === 'delete') {
+        e.preventDefault();
+        if (!(await confirmDelete(`Delete template ${t.name}?`))) return;
+        templates.splice(templates.indexOf(t), 1);
+        if (draft.templateId === t.id) draft.templateId = null;
+        save();
+        drawTemplates();
+        drawTemplateSelect();
+      }
+    };
+    return li;
+  }));
+}
+document.addEventListener('click', () => document.querySelectorAll('menu.active').forEach(m => m.classList.remove('active')));
+
+function drawEditor() {
+  $('#template-name').value = editing.name;
+  area($('#top'), editing.top);
+  area($('#bottom'), editing.bottom);
+}
+$('#template-name').oninput = e => {
+  editing.name = e.target.value;
+  save();
+  drawTemplateSelect();
+};
+
+$('#new-template').onclick = () => {
+  editing = {id: id(), name: 'New template', top: [], bottom: []};
+  templates.push(editing);
+  save();
+  drawTemplateSelect();
+  location.hash = '#template';
+};
+
+$('#import-btn').onclick = () => $('#import').click();
+$('#import').onchange = async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const t = JSON.parse(await file.text());
+    if (typeof t.name !== 'string' || !Array.isArray(t.top) || !Array.isArray(t.bottom) || ![...t.top, ...t.bottom].every(validSection)) throw new Error('invalid');
+    templates.push({...t, id: id()});
+    $('#templates-msg').textContent = '';
+    save();
+    drawTemplates();
+    drawTemplateSelect();
+  } catch {
+    $('#templates-msg').textContent = 'This file is not a catprinter template. Select a .catprinter.json file.';
+  }
+};
 
 function setIndicator(state) {
   const i = $('#ind');
