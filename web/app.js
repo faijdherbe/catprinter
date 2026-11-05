@@ -327,7 +327,7 @@ function drawTemplates() {
     const li = document.createElement('li');
     li.innerHTML = `
       <i>dashboard</i>
-      <a class="max" href="#template"></a>
+      <div class="max"><a class="link" href="#template"></a></div>
       <div>
         <button class="circle transparent" aria-haspopup="menu"><i>more_vert</i></button>
         <menu class="left no-wrap">
@@ -336,7 +336,7 @@ function drawTemplates() {
           <li><a href="#templates" data-a="delete" class="error-text"><i>delete</i>Delete</a></li>
         </menu>
       </div>`;
-    const name = li.querySelector('a.max');
+    const name = li.querySelector('.max a');
     name.textContent = t.name;
     name.onclick = () => (editing = t);
     const btn = li.querySelector('button');
@@ -429,7 +429,7 @@ function route() {
 
 // Browser check: test the real Web Bluetooth API, not the browser name.
 const REASON = {
-  'no-api': 'This browser does not have Web Bluetooth. Use Chrome or Edge on a computer, or Chrome on Android. Firefox, Safari and all browsers on iPhone and iPad do not have Web Bluetooth.',
+  'no-api': 'This browser does not have Web Bluetooth. Use Chrome or Edge on a computer, or Chrome on Android. Firefox, Safari and all browsers on iPhone and iPad do not have Web Bluetooth. On Linux, Chrome has Web Bluetooth only after you enable chrome://flags/#enable-experimental-web-platform-features.',
   off: 'This device has no Bluetooth, or Bluetooth is off. Switch on Bluetooth, then load this page again.',
 };
 const bt = await printer.bluetoothState();
