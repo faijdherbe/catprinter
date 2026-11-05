@@ -48,3 +48,74 @@ export function printJob(bitmap, {energy, speed, feed}) {
 
 const STATE_BITS = [[1, 'paper'], [2, 'cover'], [4, 'heat'], [8, 'battery']]; // 0x80 = busy, not an error
 export const stateErrors = b => STATE_BITS.filter(([bit]) => b & bit).map(([, k]) => k);
+
+let device = null;
+let tx = null;
+let paused = false;
+let resume = null;
+let chunk = 512;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Test the real API: 'ok', 'no-api' (browser has no Web Bluetooth) or 'off' (no adapter, or Bluetooth is off).
+export async function bluetoothState() {
+  if (!navigator.bluetooth?.requestDevice) return 'no-api';
+  try {
+    return (await navigator.bluetooth.getAvailability()) ? 'ok' : 'off';
+  } catch {
+    return 'no-api';
+  }
+}
+
+export const isConnected = () => !!device?.gatt.connected;
+
+export async function connect(onEvent) {
+  if (!device) {
+    device = await navigator.bluetooth.requestDevice({filters: [{namePrefix: 'MX'}], optionalServices: [SERVICE]});
+    device.addEventListener('gattserverdisconnected', () => onEvent('disconnected'));
+  }
+  const service = await (await device.gatt.connect()).getPrimaryService(SERVICE);
+  tx = await service.getCharacteristic(TX);
+  const rx = await service.getCharacteristic(RX);
+  rx.oncharacteristicvaluechanged = e => {
+    const d = new Uint8Array(e.target.value.buffer);
+    if (d.length < 7) return;
+    if (d[2] === 0xAE) { // flow control: 0x10 = pause, 0x00 = resume
+      paused = d[6] !== 0;
+      if (!paused) resume?.();
+    } else if (d[2] === 0xA3) onEvent('state', d[6]);
+  };
+  await rx.startNotifications();
+  await write(pkt(0xA3, [0]));
+  return device.name;
+}
+
+export function disconnect() {
+  device?.gatt.disconnect();
+}
+
+// ponytail: if a large write fails (small BLE MTU), use 20-byte writes. The printer reads a byte stream.
+async function write(p) {
+  for (let i = 0; i < p.length; i += chunk) {
+    try {
+      await tx.writeValueWithoutResponse(p.slice(i, i + chunk));
+    } catch (e) {
+      if (chunk === 20) throw e;
+      chunk = 20;
+      return write(p.slice(i));
+    }
+  }
+}
+
+export async function print(bitmap, settings, onProgress) {
+  const total = bitmap.height + settings.feed;
+  let rows = 0;
+  for (const p of printJob(bitmap, settings)) {
+    if (paused) await new Promise(r => (resume = r));
+    await write(p);
+    if (p[2] === 0xA2 && ++rows % 8 === 0) {
+      onProgress(rows, total);
+      await sleep(20); // ponytail: fixed throttle, the same as catprint.py. If lines are missing, increase it.
+    }
+  }
+  await sleep(1500); // the printer must empty its buffer before the next job
+}
