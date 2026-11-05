@@ -31,10 +31,184 @@ function save() {
   schedulePreview();
 }
 
-// PREVIEW (Task 7)
-function schedulePreview() {}
+const MARKER = {id: 'marker', type: 'text', md: '->*CONTENT goes here*<-', align: 'center', size: 20};
+const selectedTemplate = () => templates.find(t => t.id === draft.templateId) ?? null;
+let current = null; // the last bitmap of the compose page
+let timer = null;
 
-// COMPOSER (Task 7)
+function schedulePreview() {
+  clearTimeout(timer);
+  timer = setTimeout(preview, 150);
+}
+
+async function preview() {
+  try {
+    if (document.body.dataset.screen === 'template' && editing) {
+      drawBitmap(await renderPage(pageSections(editing, [MARKER])), $('#template-preview'));
+    } else {
+      current = await renderPage(pageSections(selectedTemplate(), draft.content));
+      drawBitmap(current, $('#preview-canvas'));
+    }
+  } catch {
+    flash('Cannot show the preview. Delete the last image and try again.', true);
+  }
+}
+
+function confirmDelete(text) {
+  const d = $('#confirm');
+  d.querySelector('h5').textContent = text;
+  d.showPopover();
+  d.querySelector('[data-v="keep"]').focus();
+  return new Promise(resolve => {
+    d.onclick = e => {
+      const v = e.target.closest('button')?.dataset.v;
+      if (!v) return;
+      d.hidePopover();
+      resolve(v === 'delete');
+    };
+    d.ontoggle = e => { if (e.newState === 'closed') resolve(false); };
+  });
+}
+
+async function loadImage(file) {
+  const img = await createImageBitmap(file);
+  const w = Math.min(768, img.width);
+  const h = Math.round((img.height * w) / img.width);
+  const c = new OffscreenCanvas(w, h);
+  c.getContext('2d').drawImage(img, 0, 0, w, h);
+  const blob = await c.convertToBlob({type: 'image/png'});
+  return new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(blob); });
+}
+
+const TEXT_FIELDS = s => `
+  <div class="field label border textarea">
+    <textarea id="md-${s.id}" data-k="md" placeholder=" " rows="4"></textarea>
+    <label for="md-${s.id}">Markdown</label>
+  </div>
+  <nav class="wrap">
+    <div class="field label border">
+      <select id="align-${s.id}" data-k="align"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select>
+      <label for="align-${s.id}">Alignment</label>
+    </div>
+    <div class="field label border">
+      <select id="size-${s.id}" data-k="size" data-num><option value="16">Small</option><option value="24">Normal</option><option value="32">Large</option><option value="48">Extra large</option></select>
+      <label for="size-${s.id}">Font size</label>
+    </div>
+  </nav>`;
+
+const slider = (s, k, label, min, max, unit) => `
+  <label for="${k}-${s.id}">${label}: <span data-out="${k}"></span>${unit}</label>
+  <div class="slider"><input type="range" id="${k}-${s.id}" data-k="${k}" min="${min}" max="${max}"><span></span></div>`;
+
+const IMAGE_FIELDS = s => `
+  <nav>
+    <button class="border" data-pick><i>image</i><span>${s.src ? 'Change image' : 'Select image'}</span></button>
+    <input type="file" accept="image/*" data-k="src" hidden>
+  </nav>
+  ${slider(s, 'width', 'Width', 10, 100, '%')}
+  ${slider(s, 'brightness', 'Brightness', -100, 100, '')}
+  ${slider(s, 'contrast', 'Contrast', -100, 100, '')}
+  <nav class="wrap">
+    <div class="field label border">
+      <select id="align-${s.id}" data-k="align"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select>
+      <label for="align-${s.id}">Alignment</label>
+    </div>
+    <div class="field label border">
+      <select id="rotate-${s.id}" data-k="rotate" data-num><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select>
+      <label for="rotate-${s.id}">Rotation</label>
+    </div>
+  </nav>
+  <nav class="wrap">
+    <label class="radio"><input type="radio" name="mode-${s.id}" value="dither" data-k="mode"><span>Dither (photos)</span></label>
+    <label class="radio"><input type="radio" name="mode-${s.id}" value="threshold" data-k="mode"><span>Threshold (line art)</span></label>
+  </nav>`;
+
+function card(s, list, redraw) {
+  const a = document.createElement('article');
+  a.className = 'border';
+  a.dataset.id = s.id;
+  a.innerHTML = `
+    <nav>
+      <i class="grip" tabindex="0" role="button" aria-label="Move section. Drag, or press Alt and an arrow key.">drag_indicator</i>
+      <h6 class="max small">${s.type === 'text' ? 'Text' : 'Image'}</h6>
+      <button class="circle transparent" data-del aria-label="Delete section"><i>close</i></button>
+    </nav>` + (s.type === 'text' ? TEXT_FIELDS(s) : IMAGE_FIELDS(s));
+
+  a.querySelectorAll('[data-k]').forEach(f => {
+    const k = f.dataset.k;
+    const out = a.querySelector(`[data-out="${k}"]`);
+    if (f.type === 'radio') f.checked = s[k] === f.value;
+    else if (f.type !== 'file') f.value = s[k];
+    if (out) out.textContent = s[k];
+    f.addEventListener(f.type === 'file' ? 'change' : 'input', async () => {
+      if (f.type === 'file') {
+        if (!f.files[0]) return;
+        s.src = await loadImage(f.files[0]);
+        a.querySelector('[data-pick] span').textContent = 'Change image';
+      } else s[k] = f.type === 'range' || 'num' in f.dataset ? +f.value : f.value;
+      if (out) out.textContent = s[k];
+      save();
+    });
+  });
+  a.querySelector('[data-pick]')?.addEventListener('click', () => a.querySelector('input[type="file"]').click());
+  a.querySelector('[data-del]').onclick = async () => {
+    if (!(await confirmDelete(`Delete this ${s.type} section?`))) return;
+    list.splice(list.indexOf(s), 1);
+    save();
+    redraw();
+  };
+
+  // Drag-and-drop with pointer events: works with mouse and touch.
+  const grip = a.querySelector('.grip');
+  grip.onpointerdown = e => {
+    grip.setPointerCapture(e.pointerId);
+    a.classList.add('dragging');
+    grip.onpointermove = ev => {
+      const box = a.parentElement;
+      const next = [...box.children].find(c => c.tagName === 'ARTICLE' && c !== a && ev.clientY < c.getBoundingClientRect().top + c.offsetHeight / 2);
+      box.insertBefore(a, next ?? box.lastElementChild);
+    };
+    grip.onpointerup = grip.onpointercancel = () => {
+      grip.onpointermove = grip.onpointerup = grip.onpointercancel = null;
+      a.classList.remove('dragging');
+      const order = [...a.parentElement.querySelectorAll(':scope > article')].map(c => c.dataset.id);
+      list.sort((p, q) => order.indexOf(p.id) - order.indexOf(q.id));
+      save();
+    };
+  };
+  grip.onkeydown = e => {
+    if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+    e.preventDefault();
+    const i = list.indexOf(s);
+    const j = i + (e.key === 'ArrowUp' ? -1 : 1);
+    if (j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    save();
+    redraw();
+    document.querySelector(`[data-id="${s.id}"] .grip`).focus();
+  };
+  return a;
+}
+
+function area(el, list) {
+  const redraw = () => {
+    const add = document.createElement('nav');
+    add.innerHTML = `
+      <button class="border" data-t="text"><i>notes</i><span>Add text</span></button>
+      <button class="border" data-t="image"><i>add_photo_alternate</i><span>Add image</span></button>`;
+    add.onclick = e => {
+      const t = e.target.closest('button')?.dataset.t;
+      if (!t) return;
+      list.push(t === 'text' ? newText() : newImage());
+      save();
+      redraw();
+    };
+    el.replaceChildren(...list.map(s => card(s, list, redraw)), add);
+  };
+  redraw();
+}
+
+area($('#content'), draft.content);
 
 // PRINTER (Task 8)
 
