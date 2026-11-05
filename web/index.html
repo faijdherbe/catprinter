@@ -23,7 +23,7 @@ body[data-gate] > :not(#gate), body:not([data-gate]) #gate { display: none; }
   #print-bar { position: sticky; bottom: 0; padding-block: .5rem; background: var(--surface); }
 }
 @media (min-width: 601px) { .sticky { position: sticky; top: 5rem; } }
-#gate { max-width: 40rem; width: 100%; justify-self: center; margin-inline: auto; padding: 2rem 1rem; }
+#gate { grid-column: 1 / -1; grid-row: 1 / -1; max-width: 40rem; width: 100%; justify-self: center; align-self: start; margin-block: 2rem; }
 #ind { background: var(--surface); }
 #ind[data-state="on"] { color: #1b5e20; border-color: currentColor; }
 body.dark #ind[data-state="on"] { color: #81c784; }
@@ -34,14 +34,14 @@ canvas { width: 100%; max-width: 384px; image-rendering: pixelated; background: 
 </style>
 </head>
 <body data-screen="edit">
-<section id="gate">
+<article id="gate">
   <h4>This browser cannot print</h4>
   <p>Catprinter prints text and images on a small Bluetooth thermal printer. To do this, the app must use Bluetooth from the browser (Web Bluetooth).</p>
   <p id="gate-reason" class="bold"></p>
   <div class="space"></div>
   <button id="gate-continue" class="border"><i>visibility</i><span>Continue without printing</span></button>
   <p class="small-text">If you continue, you can make pages and templates and see the preview. You cannot connect to the printer, and you cannot print.</p>
-</section>
+</article>
 
 <header class="fixed primary-container">
   <nav>
@@ -71,19 +71,19 @@ canvas { width: 100%; max-width: 384px; image-rendering: pixelated; background: 
         <div id="content"></div>
       </div>
       <div class="s12 m5" id="preview-pane">
-        <div class="sticky">
+        <article class="sticky">
           <canvas id="preview-canvas" aria-label="Preview of the print"></canvas>
           <p id="print-msg" class="error-text" role="alert"></p>
           <div id="print-bar">
             <button id="print" class="responsive extra"><i>print</i><span>Print</span></button>
           </div>
           <p class="saved small-text" aria-live="polite"></p>
-        </div>
+        </article>
       </div>
     </div>
   </section>
 
-  <section id="templates-screen">
+  <article id="templates-screen">
     <h5>Templates</h5>
     <ul class="list border" id="template-list"></ul>
     <p id="templates-msg" class="error-text" role="alert"></p>
@@ -92,7 +92,7 @@ canvas { width: 100%; max-width: 384px; image-rendering: pixelated; background: 
       <button class="border" id="import-btn"><i>upload</i><span>Import</span></button>
       <input type="file" id="import" accept=".json,application/json" hidden>
     </nav>
-  </section>
+  </article>
 
   <section id="template-screen" class="grid">
     <div class="s12 m7">
@@ -107,14 +107,14 @@ canvas { width: 100%; max-width: 384px; image-rendering: pixelated; background: 
       <div id="bottom"></div>
     </div>
     <div class="s12 m5">
-      <div class="sticky">
+      <article class="sticky">
         <canvas id="template-preview" aria-label="Preview of the template"></canvas>
         <p class="saved small-text" aria-live="polite"></p>
-      </div>
+      </article>
     </div>
   </section>
 
-  <section id="printer-screen">
+  <article id="printer-screen">
     <h5>Printer</h5>
     <ul class="list border">
       <li><i>receipt</i><div class="max">Paper</div><span id="st-paper">–</span></li>
@@ -129,7 +129,7 @@ canvas { width: 100%; max-width: 384px; image-rendering: pixelated; background: 
     <div class="slider"><input type="range" id="feed" data-s="feed" min="0" max="400" step="10"><span></span></div>
     <div class="space"></div>
     <button id="conn" class="responsive"><i>bluetooth</i><span>Connect</span></button>
-  </section>
+  </article>
 
   <dialog id="confirm" popover>
     <h5></h5>
