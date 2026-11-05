@@ -1,0 +1,50 @@
+// MX10 printer: packets (pure functions) and the Web Bluetooth transport.
+// Protocol: see README.md -> Protocol notes.
+export const WIDTH = 384;
+export const SERVICE = 0xae30; // check on the real printer before the first test print
+const TX = 0xae01;
+const RX = 0xae02;
+
+export function crc8(data) {
+  let c = 0;
+  for (const x of data) {
+    c ^= x;
+    for (let i = 0; i < 8; i++) c = c & 0x80 ? ((c << 1) ^ 7) & 0xff : (c << 1) & 0xff;
+  }
+  return c;
+}
+
+export function pkt(cmd, payload) {
+  const p = [...payload];
+  return Uint8Array.from([0x51, 0x78, cmd, 0, p.length & 0xff, p.length >> 8, ...p, crc8(p), 0xff]);
+}
+
+// One 48-byte row per bitmap row. Bit 0 = leftmost pixel. 1 = black.
+export function packRows(bitmap) {
+  const rows = [];
+  for (let y = 0; y < bitmap.height; y++) {
+    const r = new Uint8Array(WIDTH / 8);
+    for (let x = 0; x < WIDTH; x++) if (bitmap.data[y * WIDTH + x]) r[x >> 3] |= 1 << (x & 7);
+    rows.push(r);
+  }
+  return rows;
+}
+
+export function printJob(bitmap, {energy, speed, feed}) {
+  const blank = new Uint8Array(WIDTH / 8);
+  return [
+    pkt(0xA3, [0]), // get state
+    pkt(0xA4, [0x33]), // quality
+    pkt(0xA6, [0xAA, 0x55, 0x17, 0x38, 0x44, 0x5F, 0x5F, 0x5F, 0x44, 0x38, 0x2C]), // lattice start
+    pkt(0xAF, [energy & 0xff, energy >> 8]),
+    pkt(0xBD, [speed]),
+    pkt(0xBE, [1]), // apply energy
+    ...packRows(bitmap).map(r => pkt(0xA2, r)),
+    ...Array.from({length: feed}, () => pkt(0xA2, blank)), // blank rows: 0xA1 feed does not always move the paper
+    pkt(0xA6, [0xAA, 0x55, 0x17, 0, 0, 0, 0, 0, 0, 0, 0x17]), // lattice end
+    pkt(0xA3, [0]),
+  ];
+}
+
+const STATE_BITS = [[1, 'paper'], [2, 'cover'], [4, 'heat'], [8, 'battery']]; // 0x80 = busy, not an error
+export const stateErrors = b => STATE_BITS.filter(([bit]) => b & bit).map(([, k]) => k);

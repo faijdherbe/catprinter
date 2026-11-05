@@ -3,11 +3,23 @@
 <title>Catprinter tests</title>
 <pre id="out">running</pre>
 <script type="module">
+import { crc8, pkt, packRows, printJob, stateErrors } from './printer.js';
 const fails = [];
 const check = (name, ok) => { if (!ok) fails.push(name); };
 const hex = a => [...a].map(b => b.toString(16).padStart(2, '0')).join('');
 try {
   // TESTS
+  check('crc8', crc8([0, 0, 0x49]) === 0xf8);
+  check('pkt', hex(pkt(0xA3, [0])) === '5178a30001000000ff');
+  const bm = {width: 384, height: 2, data: new Uint8Array(768)};
+  bm.data[0] = 1; bm.data[384 + 9] = 1;
+  const rows = packRows(bm);
+  check('packRows', rows.length === 2 && rows[0].length === 48 && rows[0][0] === 0x01 && rows[1][1] === 0x02);
+  const job = printJob(bm, {energy: 12000, speed: 32, feed: 3});
+  check('printJob start/end', job[0][2] === 0xA3 && job.at(-1)[2] === 0xA3 && job.at(-2)[2] === 0xA6);
+  check('printJob rows', job.filter(p => p[2] === 0xA2).length === 2 + 3);
+  check('printJob energy', hex(job.find(p => p[2] === 0xAF).slice(6, 8)) === 'e02e');
+  check('stateErrors', stateErrors(0x03).join() === 'paper,cover' && stateErrors(0x80).length === 0);
 } catch (e) {
   fails.push('exception: ' + e.message);
 }
