@@ -71,7 +71,11 @@ export const isConnected = () => !!device?.gatt.connected;
 export async function connect(onEvent) {
   if (!device) {
     device = await navigator.bluetooth.requestDevice({filters: [{namePrefix: 'MX'}], optionalServices: [SERVICE]});
-    device.addEventListener('gattserverdisconnected', () => onEvent('disconnected'));
+    device.addEventListener('gattserverdisconnected', () => {
+      paused = false;
+      resume?.(); // a print that waits for 'resume' continues, and its next write fails
+      onEvent('disconnected');
+    });
   }
   const service = await (await device.gatt.connect()).getPrimaryService(SERVICE);
   tx = await service.getCharacteristic(TX);
@@ -84,6 +88,7 @@ export async function connect(onEvent) {
       if (!paused) resume?.();
     } else if (d[2] === 0xA3) onEvent('state', d[6]);
   };
+  paused = false;
   await rx.startNotifications();
   await write(pkt(0xA3, [0]));
   return device.name;
@@ -99,7 +104,7 @@ async function write(p) {
     try {
       await tx.writeValueWithoutResponse(p.slice(i, i + chunk));
     } catch (e) {
-      if (chunk === 20) throw e;
+      if (chunk === 20 || !isConnected()) throw e;
       chunk = 20;
       return write(p.slice(i));
     }

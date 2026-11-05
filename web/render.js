@@ -1,7 +1,7 @@
 // Sections -> 1-bit bitmap, 384 px wide. 1 = black. No page DOM is used.
 import { Marked } from './lib/marked.esm.js';
+import { WIDTH } from './printer.js';
 
-export const WIDTH = 384;
 const GAP = 8; // px between sections
 
 // ->text<- on its own line = one centered line (not GFM).

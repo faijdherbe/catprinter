@@ -21,7 +21,12 @@ function flash(text, isError = false) {
   });
 }
 
+let saveTimer = null;
 function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(store, 300);
+}
+function store() {
   try {
     for (const [k, v] of Object.entries({templates, draft, settings})) localStorage.setItem('catprinter.' + k, JSON.stringify(v));
     flash('✓ Saved');
@@ -30,10 +35,10 @@ function save() {
   }
   schedulePreview();
 }
+addEventListener('pagehide', store); // do not lose the last 300 ms of input
 
 const MARKER = {id: 'marker', type: 'text', md: '->*CONTENT goes here*<-', align: 'center', size: 20};
 const selectedTemplate = () => templates.find(t => t.id === draft.templateId) ?? null;
-let current = null; // the last bitmap of the compose page
 let timer = null;
 
 function schedulePreview() {
@@ -46,8 +51,7 @@ async function preview() {
     if (document.body.dataset.screen === 'template' && editing) {
       drawBitmap(await renderPage(pageSections(editing, [MARKER])), $('#template-preview'));
     } else {
-      current = await renderPage(pageSections(selectedTemplate(), draft.content));
-      drawBitmap(current, $('#preview-canvas'));
+      drawBitmap(await renderPage(pageSections(selectedTemplate(), draft.content)), $('#preview-canvas'));
     }
   } catch {
     flash('Cannot show the preview. Delete the last image and try again.', true);
@@ -80,6 +84,8 @@ async function loadImage(file) {
   return new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(blob); });
 }
 
+const ALIGN = s => `<select id="align-${s.id}" data-k="align"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select>`;
+
 const TEXT_FIELDS = s => `
   <div class="field label border textarea">
     <textarea id="md-${s.id}" data-k="md" placeholder=" " rows="4"></textarea>
@@ -87,7 +93,7 @@ const TEXT_FIELDS = s => `
   </div>
   <nav class="wrap">
     <div class="field label border">
-      <select id="align-${s.id}" data-k="align"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select>
+      ${ALIGN(s)}
       <label for="align-${s.id}">Alignment</label>
     </div>
     <div class="field label border">
@@ -110,7 +116,7 @@ const IMAGE_FIELDS = s => `
   ${slider(s, 'contrast', 'Contrast', -100, 100, '')}
   <nav class="wrap">
     <div class="field label border">
-      <select id="align-${s.id}" data-k="align"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select>
+      ${ALIGN(s)}
       <label for="align-${s.id}">Alignment</label>
     </div>
     <div class="field label border">
@@ -217,6 +223,7 @@ const MSG = {
   battery: 'Battery is low. Charge the printer.',
   lost: 'Printer is not connected. Tap Print to connect again.',
   connect: 'Cannot connect. Make sure that the printer is on and that no other device is connected to it.',
+  render: 'Cannot make the print. Delete the last image and try again.',
 };
 let userDisconnect = false;
 const printMsg = t => ($('#print-msg').textContent = t);
@@ -246,6 +253,7 @@ function onPrinter(type, b) {
 
 async function connectPrinter() {
   userDisconnect = false;
+  setIndicator('busy', 'Connecting');
   settings.printer = await printer.connect(onPrinter);
   save();
   setIndicator('on');
@@ -270,16 +278,23 @@ $('#print').onclick = async () => {
   b.disabled = true;
   b.setAttribute('aria-busy', 'true');
   b.innerHTML = '<progress class="circle small"></progress><span>Printing</span>';
-  let stage = 'connect';
+  let stage = 'render';
   try {
     clearTimeout(timer);
-    await preview();
+    const bitmap = await renderPage(pageSections(selectedTemplate(), draft.content)); // throws: no old bitmap is printed
+    drawBitmap(bitmap, $('#preview-canvas'));
+    stage = 'connect';
     if (!printer.isConnected()) await connectPrinter();
     stage = 'print';
     printMsg('');
-    await printer.print(current, settings, (n, total) => (b.querySelector('span').textContent = `Printing ${n}/${total}`));
+    await printer.print(bitmap, settings, (n, total) => {
+      b.querySelector('span').textContent = `Printing ${n}/${total}`;
+      setIndicator('busy', `Printing ${Math.round((100 * n) / total)}%`);
+    });
+    setIndicator('on');
   } catch (e) {
-    if (e.name !== 'NotFoundError') printMsg(stage === 'connect' ? MSG.connect : MSG.lost);
+    if (e.name !== 'NotFoundError') printMsg({render: MSG.render, connect: MSG.connect, print: MSG.lost}[stage]);
+    if (stage === 'connect') setIndicator(settings.printer ? 'off' : 'none');
   }
   b.disabled = false;
   b.removeAttribute('aria-busy');
@@ -415,19 +430,21 @@ $('#import').onchange = async e => {
   }
 };
 
-function setIndicator(state) {
+// state: none | off | on | busy. busy shows `text` (Connecting, Printing 40%).
+function setIndicator(state, text) {
   const i = $('#ind');
-  i.dataset.state = state;
+  i.dataset.state = state === 'busy' ? 'on' : state;
   const name = settings.printer ?? 'No printer';
-  i.querySelector('i').textContent = {none: 'bluetooth', off: 'bluetooth_disabled', on: 'bluetooth_connected'}[state];
-  i.querySelector('span').textContent = state === 'off' ? `${name} offline` : name;
+  i.querySelector('i').textContent = {none: 'bluetooth', off: 'bluetooth_disabled', on: 'bluetooth_connected', busy: 'bluetooth_searching'}[state];
+  i.querySelector('span').textContent = state === 'busy' ? text : state === 'off' ? `${name} offline` : name;
 }
 
 const SCREENS = ['edit', 'preview', 'templates', 'template', 'printer'];
 function route() {
   let s = location.hash.slice(1);
   if (!SCREENS.includes(s)) s = 'edit';
-  if (s === 'template' && !editing) s = 'templates';
+  if (s === 'template' && !templates.includes(editing)) s = 'templates';
+  if ('#' + s !== location.hash) history.replaceState(null, '', '#' + s);
   document.body.dataset.screen = s;
   document.querySelectorAll('nav a[href^="#"]').forEach(a => {
     const on = a.hash === '#' + s || (a.dataset.also ?? '').split(' ').includes(s);
