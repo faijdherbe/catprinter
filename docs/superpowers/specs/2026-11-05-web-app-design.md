@@ -12,7 +12,7 @@ A static web app in `web/` that prints text and images on the MX10 printer with 
 - **Text section:** GFM Markdown. Supported: headings `#`/`##`/`###`, bold, italic, paragraphs, line breaks, lists, numbered lists, task items `- [ ]`/`- [x]`, horizontal lines `---`, quotes `>`, inline code, code blocks and tables. Settings: alignment (left, center, right) and font size. The inline syntax `->text<-` centers one line.
 - **Image section:** settings for width (percent of 384 px), alignment and mode (dither for photos, threshold for line art). Also brightness, contrast and rotation (0°, 90°, 180°, 270°).
 - **Templates:** a template has a name, a TOP and a BOTTOM. TOP and BOTTOM are lists of sections, the same as a page. When a template is selected, the Edit area shows only the CONTENT sections. The preview and the print show TOP + CONTENT + BOTTOM.
-- **Printer settings:** darkness (energy), speed and feed after the print. Defaults: 12000, 32 and 150 rows (the same as `catprint.py`).
+- **Printer settings:** darkness (energy), speed and feed after the print. Defaults: 12000, 32 and 100 rows.
 - **Autosave:** there are no Save buttons. The app saves each change at once: the draft (the CONTENT sections and the selected template), the templates and the printer settings. After each save, a small "Saved" text shows.
 - **Delete confirmation:** each delete (a template or a section) asks for confirmation in a dialog with the buttons Delete and Keep.
 - **Export and import:** one template to one JSON file, and one JSON file to one template.
@@ -85,7 +85,7 @@ The modules are ES modules (`<script type="module">`). `render.js` and `printer.
 // localStorage keys
 "catprinter.templates"  // [Template]
 "catprinter.draft"      // { templateId | null, content: [Section] }
-"catprinter.settings"   // { energy: 12000, speed: 32, feed: 150 }
+"catprinter.settings"   // { energy: 12000, speed: 32, feed: 100 }
 ```
 
 - When you add an image, the app scales it to a maximum width of 768 px. It keeps this copy as a PNG data URL in `src`. With it, you can change the image settings later.

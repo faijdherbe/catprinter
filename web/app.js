@@ -11,7 +11,7 @@ const newImage = () => ({id: id(), type: 'image', src: '', width: 100, align: 'c
 
 let templates = load('templates', []);
 let draft = load('draft', {templateId: null, content: [newText()]});
-let settings = load('settings', {energy: 12000, speed: 32, feed: 150, printer: null});
+let settings = load('settings', {energy: 12000, speed: 32, feed: 100, printer: null});
 let editing = null; // the template that #template shows
 
 function flash(text, isError = false) {
