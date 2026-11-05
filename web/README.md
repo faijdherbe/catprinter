@@ -29,6 +29,7 @@ The service worker keeps the files in a cache. After a change, increase `VERSION
 3. Preview: the exact 1-bit bitmap that the printer gets. Tap Print.
 4. Templates: a template has a TOP and a BOTTOM. Select it on the Edit screen. The app puts your content between them.
 5. Printer: darkness, speed and feed.
+6. About: what the app does, your data, the browsers, and a link to this repo.
 
 The app saves each change at once in the browser (localStorage). To move templates to another device, use Export and Import.
 

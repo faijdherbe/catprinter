@@ -16,6 +16,7 @@
 body:not([data-screen="templates"]) #templates-screen,
 body:not([data-screen="template"]) #template-screen,
 body:not([data-screen="printer"]) #printer-screen,
+body:not([data-screen="about"]) #about-screen,
 body:not([data-screen="edit"]):not([data-screen="preview"]) #compose-screen { display: none; }
 body[data-gate] > :not(#gate), body:not([data-gate]) #gate { display: none; }
 @media (max-width: 600px) {
@@ -23,7 +24,7 @@ body[data-gate] > :not(#gate), body:not([data-gate]) #gate { display: none; }
   #print-bar { position: sticky; bottom: 0; padding-block: .5rem; background: var(--surface); }
 }
 @media (min-width: 601px) { .sticky { position: sticky; top: 5rem; } }
-#templates-screen, #printer-screen { max-width: 40rem; margin-inline: auto; }
+#templates-screen, #printer-screen, #about-screen { max-width: 40rem; margin-inline: auto; }
 #gate { grid-column: 1 / -1; grid-row: 1 / -1; max-width: 40rem; width: 100%; justify-self: center; align-self: start; margin-block: 2rem; }
 #ind { background: var(--surface); }
 #ind[data-state="on"] { color: #1b5e20; border-color: currentColor; }
@@ -51,6 +52,7 @@ canvas { width: 100%; max-width: 384px; image-rendering: pixelated; background: 
     <a class="m l button transparent" href="#edit" data-also="preview"><i>edit_note</i><span>Compose</span></a>
     <a class="m l button transparent" href="#templates" data-also="template"><i>dashboard</i><span>Templates</span></a>
     <a class="m l button transparent" href="#printer"><i>print</i><span>Printer</span></a>
+    <a class="m l button transparent" href="#about"><i>info</i><span>About</span></a>
     <a class="chip" id="ind" href="#printer" aria-live="polite"><i>bluetooth</i><span>No printer</span></a>
   </nav>
 </header>
@@ -60,6 +62,7 @@ canvas { width: 100%; max-width: 384px; image-rendering: pixelated; background: 
   <a href="#preview"><i>receipt_long</i><span>Preview</span></a>
   <a href="#templates" data-also="template"><i>dashboard</i><span>Templates</span></a>
   <a href="#printer"><i>print</i><span>Printer</span></a>
+  <a href="#about"><i>info</i><span>About</span></a>
 </nav>
 
 <main class="responsive">
@@ -131,6 +134,21 @@ canvas { width: 100%; max-width: 384px; image-rendering: pixelated; background: 
     <div class="slider"><input type="range" id="feed" data-s="feed" min="0" max="400" step="10"><span></span></div>
     <div class="space"></div>
     <button id="conn" class="responsive"><i>bluetooth</i><span>Connect</span></button>
+  </article>
+
+  <article id="about-screen">
+    <h5>About Catprinter</h5>
+    <p>Catprinter prints text and images on the MX10 Bluetooth thermal printer (the small "cat printer"). The paper is 384 px wide and the print is black and white only.</p>
+    <h6>Your data</h6>
+    <p>The app has no server and no account. Your pages, templates and settings stay in this browser. The app sends data only to the printer, over Bluetooth.</p>
+    <h6>Browsers</h6>
+    <p>Chrome or Edge on a computer, and Chrome on Android. On Linux, enable chrome://flags/#enable-experimental-web-platform-features. Firefox, Safari and all browsers on iPhone and iPad cannot print, because they have no Web Bluetooth.</p>
+    <h6>Source code</h6>
+    <p>The source code, a Python script for the same printer and the protocol notes are on GitHub.</p>
+    <nav>
+      <a class="button" href="https://github.com/faijdherbe/catprinter" target="_blank" rel="noopener"><i>code</i><span>Open on GitHub</span></a>
+      <a class="button border" href="https://github.com/faijdherbe/catprinter/issues" target="_blank" rel="noopener"><i>bug_report</i><span>Report a problem</span></a>
+    </nav>
   </article>
 
   <dialog id="confirm" popover>

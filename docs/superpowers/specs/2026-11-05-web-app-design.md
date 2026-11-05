@@ -30,8 +30,9 @@ The screen comes from the URL hash, so the Android back button works.
 | `#templates` | Template list                 | Template list                           |
 | `#template`  | Template editor               | Template editor (Edit left, Preview right) |
 | `#printer`   | Printer screen                | Printer screen                          |
+| `#about`     | About screen                  | About screen                            |
 
-- **Navigation:** one set of links. Phone: bottom tab bar `nav.bottom.s` with Edit · Preview · Templates · Printer. Desktop: links in the top bar `header.fixed` with Compose · Templates · Printer. In the template editor, Templates stays active.
+- **Navigation:** one set of links. Phone: bottom tab bar `nav.bottom.s` with Edit · Preview · Templates · Printer · About. Desktop: links in the top bar `header.fixed` with Compose · Templates · Printer · About. In the template editor, Templates stays active.
 - **Connection indicator:** a chip at the top right on all screens, with `aria-live="polite"`. A tap opens `#printer`. Each state has a color, an icon and a word:
 
 | State                         | Color | Text           |

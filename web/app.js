@@ -439,7 +439,7 @@ function setIndicator(state, text) {
   i.querySelector('span').textContent = state === 'busy' ? text : state === 'off' ? `${name} offline` : name;
 }
 
-const SCREENS = ['edit', 'preview', 'templates', 'template', 'printer'];
+const SCREENS = ['edit', 'preview', 'templates', 'template', 'printer', 'about'];
 function route() {
   let s = location.hash.slice(1);
   if (!SCREENS.includes(s)) s = 'edit';
