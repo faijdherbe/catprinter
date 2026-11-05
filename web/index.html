@@ -23,6 +23,7 @@ body[data-gate] > :not(#gate), body:not([data-gate]) #gate { display: none; }
   #print-bar { position: sticky; bottom: 0; padding-block: .5rem; background: var(--surface); }
 }
 @media (min-width: 601px) { .sticky { position: sticky; top: 5rem; } }
+#templates-screen, #printer-screen { max-width: 40rem; margin-inline: auto; }
 #gate { grid-column: 1 / -1; grid-row: 1 / -1; max-width: 40rem; width: 100%; justify-self: center; align-self: start; margin-block: 2rem; }
 #ind { background: var(--surface); }
 #ind[data-state="on"] { color: #1b5e20; border-color: currentColor; }

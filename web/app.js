@@ -300,9 +300,22 @@ document.querySelectorAll('[data-s]').forEach(f => {
 drawConn();
 
 // TEMPLATES
-const validSection = s =>
-  s && typeof s.id === 'string' &&
-  ((s.type === 'text' && typeof s.md === 'string') || (s.type === 'image' && typeof s.src === 'string' && (s.src === '' || s.src.startsWith('data:image/'))));
+// Import is a trust boundary: copy only known fields with valid values, and give each section a new id
+// (card() writes the id into innerHTML). Throws on an invalid section.
+const pick = (v, ok, d) => (ok.includes(v) ? v : d);
+const num = (v, min, max, d) => (Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : d);
+function cleanSection(s) {
+  const align = pick(s?.align, ['left', 'center', 'right'], 'left');
+  if (s?.type === 'text' && typeof s.md === 'string') return {...newText(), md: s.md, align, size: pick(s.size, [16, 24, 32, 48], 24)};
+  if (s?.type === 'image' && typeof s.src === 'string' && (s.src === '' || s.src.startsWith('data:image/'))) {
+    return {
+      ...newImage(), src: s.src, align,
+      width: num(s.width, 10, 100, 100), brightness: num(s.brightness, -100, 100, 0), contrast: num(s.contrast, -100, 100, 0),
+      mode: pick(s.mode, ['dither', 'threshold'], 'dither'), rotate: pick(s.rotate, [0, 90, 180, 270], 0),
+    };
+  }
+  throw new Error('invalid section');
+}
 
 function drawTemplateSelect() {
   const sel = $('#template-select');
@@ -391,8 +404,8 @@ $('#import').onchange = async e => {
   if (!file) return;
   try {
     const t = JSON.parse(await file.text());
-    if (typeof t.name !== 'string' || !Array.isArray(t.top) || !Array.isArray(t.bottom) || ![...t.top, ...t.bottom].every(validSection)) throw new Error('invalid');
-    templates.push({...t, id: id()});
+    if (typeof t.name !== 'string' || !Array.isArray(t.top) || !Array.isArray(t.bottom)) throw new Error('invalid');
+    templates.push({id: id(), name: t.name.slice(0, 100), top: t.top.map(cleanSection), bottom: t.bottom.map(cleanSection)});
     $('#templates-msg').textContent = '';
     save();
     drawTemplates();

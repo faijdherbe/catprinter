@@ -1,5 +1,5 @@
 // Cache-first service worker. Change VERSION after each change to a file in FILES.
-const VERSION = 'catprinter-2';
+const VERSION = 'catprinter-3';
 const FILES = [
   './', 'index.html', 'app.js', 'render.js', 'printer.js', 'manifest.webmanifest', 'icons/192.png', 'icons/512.png',
   'lib/beer.min.css', 'lib/beer.min.js', 'lib/material-dynamic-colors.min.js', 'lib/material-symbols-outlined.woff2', 'lib/marked.esm.js',
